@@ -1,0 +1,2 @@
+- Changed how the debug mode is activated, now it needs "Show On HUD" to be on (instead of "Show In Toolbar Config").
+- 

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <BlueprintClassEntries>
+    <Entry Class="SmallBlocks" BlueprintSubtypeId="TerminalBlock/WingStreight" />
+    <Entry Class="SmallBlocks" BlueprintSubtypeId="TerminalBlock/WingAngled1" />
+    <Entry Class="SmallBlocks" BlueprintSubtypeId="TerminalBlock/WingAngled2" />
+  </BlueprintClassEntries>
+</Definitions>
