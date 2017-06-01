@@ -10,8 +10,6 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 
-using Digi.Utils;
-
 namespace Digi.Aerodynamics
 {
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]

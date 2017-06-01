@@ -6,8 +6,8 @@
         <TypeId>GuiBlockCategoryDefinition</TypeId>
         <SubtypeId/>
       </Id>
-      <DisplayName>+ Digi</DisplayName>
-      <Name>z-mod-digi</Name>
+      <DisplayName>Aerodynamic Blocks</DisplayName>
+      <Name>Aerodynamics</Name>
       <ItemIds>
         <string>TerminalBlock/WingStreight</string>
       </ItemIds>
