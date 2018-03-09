@@ -90,8 +90,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Aerodynamics.cs" />
+    <Compile Include="AerodynamicWingsMod.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="Wing.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

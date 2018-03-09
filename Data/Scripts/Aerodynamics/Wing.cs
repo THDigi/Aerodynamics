@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
-using VRage;
 using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -15,16 +11,19 @@ using VRageMath;
 
 namespace Digi.Aerodynamics
 {
-
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TerminalBlock), false, "WingAngled1", "WingAngled2", "WingStreight")]
     public class Wing : MyGameLogicComponent
     {
+        private IMyTerminalBlock block;
         private float atmosphere = 0;
         private int atmospheres = 0;
-        private Vector3? debugPrevColor = null;
+
+        private bool debugPrevColorSaved = false;
+        private Vector3 debugPrevColor;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
+            block = (IMyTerminalBlock)Entity;
             NeedsUpdate = MyEntityUpdateEnum.BEFORE_NEXT_FRAME;
         }
 
@@ -32,8 +31,6 @@ namespace Digi.Aerodynamics
         {
             try
             {
-                var block = (IMyTerminalBlock)Entity;
-
                 if(block.CubeGrid.Physics == null)
                 {
                     NeedsUpdate = MyEntityUpdateEnum.NONE;
@@ -55,48 +52,49 @@ namespace Digi.Aerodynamics
 
         public override void Close()
         {
-            var block = (IMyTerminalBlock)Entity;
-            block.AppendingCustomInfo -= CustomInfo;
+            block = (IMyTerminalBlock)Entity;
+
+            if(block != null)
+                block.AppendingCustomInfo -= CustomInfo;
         }
 
         public override void UpdateAfterSimulation()
         {
+            bool noLiftWarning = true;
+
             try
             {
-                if(!Aerodynamics.instance.enabled)
+                if(!AerodynamicsMod.instance.enabled)
                     return;
 
-                var block = (IMyTerminalBlock)Entity;
-                var grid = (MyCubeGrid)block.CubeGrid;
+                var grid = block.CubeGrid;
 
                 if(grid.Physics == null || grid.Physics.IsStatic || block.MarkedForClose || block.Closed || !block.IsWorking)
                     return;
 
                 var gridCenter = grid.Physics.CenterOfMassWorld;
-
-                bool debug = MyAPIGateway.Session.CreativeMode && block.ShowInToolbarConfig;
+                bool debug = (MyAPIGateway.Session.CreativeMode && block.ShowInToolbarConfig);
                 bool debugText = true;
-                IMySlimBlock slim = null;
 
                 if(debug)
                 {
-                    slim = grid.GetCubeBlock(block.Position);
+                    var controlled = MyAPIGateway.Session.ControlledObject as IMyEntity;
 
-                    if(MyAPIGateway.Session.ControlledObject != null && MyAPIGateway.Session.ControlledObject.Entity != null)
+                    if(controlled != null)
                     {
-                        var controlled = MyAPIGateway.Session.ControlledObject.Entity;
                         debugText = (controlled.EntityId == grid.EntityId || Vector3D.DistanceSquared(block.GetPosition(), controlled.GetPosition()) <= (30 * 30));
                     }
 
-                    if(!debugPrevColor.HasValue)
+                    if(!debugPrevColorSaved)
                     {
-                        debugPrevColor = slim.GetColorMask();
+                        debugPrevColorSaved = true;
+                        debugPrevColor = block.SlimBlock.GetColorMask();
                     }
                 }
-                else if(debugPrevColor.HasValue)
+                else if(debugPrevColorSaved)
                 {
-                    grid.ChangeColor(grid.GetCubeBlock(slim.Position), debugPrevColor.Value);
-                    debugPrevColor = null;
+                    debugPrevColorSaved = false;
+                    block.Render.ColorMaskHsv = debugPrevColor;
                 }
 
                 if(atmospheres == 0 || atmosphere <= float.Epsilon)
@@ -106,8 +104,7 @@ namespace Digi.Aerodynamics
                         if(debugText)
                             MyAPIGateway.Utilities.ShowNotification(block.CustomName + ": not in atmosphere", 16, MyFontEnum.Red);
 
-                        if(Vector3.DistanceSquared(slim.GetColorMask(), Aerodynamics.instance.DEBUG_COLOR_INACTIVE) > float.Epsilon)
-                            grid.ChangeColor(grid.GetCubeBlock(slim.Position), Aerodynamics.instance.DEBUG_COLOR_INACTIVE);
+                        DebugSetColor(ref AerodynamicsMod.instance.DEBUG_COLOR_INACTIVE);
                     }
 
                     return;
@@ -152,6 +149,7 @@ namespace Digi.Aerodynamics
                         var forceVector = -upDir * upDir.Dot(vel) * forceMul * speedSq * atmosphere;
 
                         grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, gridCenter, null);
+                        noLiftWarning = false;
 
                         if(debug)
                         {
@@ -164,8 +162,7 @@ namespace Digi.Aerodynamics
                             if(debugText)
                                 MyAPIGateway.Utilities.ShowNotification(block.CustomName + ": forceMul=" + Math.Round(forceMul, 2) + "; atmosphere=" + Math.Round(atmosphere * 100, 0) + "%; totalforce=" + Math.Round(totalForce / 1000, 2) + " MN", 16, MyFontEnum.Green);
 
-                            if(Vector3.DistanceSquared(slim.GetColorMask(), Aerodynamics.instance.DEBUG_COLOR_ACTIVE) > float.Epsilon)
-                                grid.ChangeColor(grid.GetCubeBlock(slim.Position), Aerodynamics.instance.DEBUG_COLOR_ACTIVE);
+                            DebugSetColor(ref AerodynamicsMod.instance.DEBUG_COLOR_ACTIVE);
                         }
                     }
                     else if(debug)
@@ -173,8 +170,7 @@ namespace Digi.Aerodynamics
                         if(debugText)
                             MyAPIGateway.Utilities.ShowNotification(block.CustomName + ": wrong direction", 16, MyFontEnum.Red);
 
-                        if(Vector3.DistanceSquared(slim.GetColorMask(), Aerodynamics.instance.DEBUG_COLOR_INACTIVE) > float.Epsilon)
-                            grid.ChangeColor(grid.GetCubeBlock(slim.Position), Aerodynamics.instance.DEBUG_COLOR_INACTIVE);
+                        DebugSetColor(ref AerodynamicsMod.instance.DEBUG_COLOR_INACTIVE);
                     }
                 }
                 else if(debug)
@@ -182,13 +178,15 @@ namespace Digi.Aerodynamics
                     if(debugText)
                         MyAPIGateway.Utilities.ShowNotification(block.CustomName + ": not enough speed", 16, MyFontEnum.Red);
 
-                    if(Vector3.DistanceSquared(slim.GetColorMask(), Aerodynamics.instance.DEBUG_COLOR_INACTIVE) > float.Epsilon)
-                        grid.ChangeColor(grid.GetCubeBlock(slim.Position), Aerodynamics.instance.DEBUG_COLOR_INACTIVE);
+                    DebugSetColor(ref AerodynamicsMod.instance.DEBUG_COLOR_INACTIVE);
                 }
             }
             catch(Exception e)
             {
-                Log.Error(e);
+                if(noLiftWarning)
+                    Log.Error(e, "Error in wing update - WARNING NO WING LIFT!");
+                else
+                    Log.Error(e);
             }
         }
 
@@ -196,7 +194,7 @@ namespace Digi.Aerodynamics
         {
             try
             {
-                if(!Aerodynamics.instance.enabled)
+                if(!AerodynamicsMod.instance.enabled)
                     return;
 
                 var block = (IMyTerminalBlock)Entity;
@@ -206,7 +204,7 @@ namespace Digi.Aerodynamics
                     return;
 
                 var gridCenter = grid.Physics.CenterOfMassWorld;
-                var planets = Aerodynamics.instance.planets;
+                var planets = AerodynamicsMod.instance.planets;
 
                 atmosphere = 0;
                 atmospheres = 0;
@@ -231,7 +229,7 @@ namespace Digi.Aerodynamics
                 if(atmospheres > 0)
                 {
                     atmosphere /= atmospheres;
-                    atmosphere = MathHelper.Clamp((atmosphere - Aerodynamics.MIN_ATMOSPHERE) / (Aerodynamics.MAX_ATMOSPHERE - Aerodynamics.MIN_ATMOSPHERE), 0f, 1f);
+                    atmosphere = MathHelper.Clamp((atmosphere - AerodynamicsMod.MIN_ATMOSPHERE) / (AerodynamicsMod.MAX_ATMOSPHERE - AerodynamicsMod.MIN_ATMOSPHERE), 0f, 1f);
                 }
             }
             catch(Exception e)
@@ -245,7 +243,7 @@ namespace Digi.Aerodynamics
             try
             {
                 var block = (IMyTerminalBlock)Entity;
-                var on = Aerodynamics.instance.enabled;
+                var on = AerodynamicsMod.instance.enabled;
 
                 block.RefreshCustomInfo();
 
@@ -266,14 +264,22 @@ namespace Digi.Aerodynamics
             {
                 info.Append('\n');
 
-                if(Aerodynamics.instance.enabled)
+                if(AerodynamicsMod.instance.enabled)
                     info.Append("Wings are enabled and working.");
                 else
-                    info.Append("Wings disabled by another mod: ").Append(Aerodynamics.instance.disabledBy ?? "(unknown mod)");
+                    info.Append("Wings disabled by another mod: ").Append(AerodynamicsMod.instance.disabledBy ?? "(unknown mod)");
             }
             catch(Exception e)
             {
                 Log.Error(e);
+            }
+        }
+
+        private void DebugSetColor(ref Vector3 color)
+        {
+            if(!block.Render.ColorMaskHsv.Equals(color, 0.0001f))
+            {
+                block.Render.ColorMaskHsv = color; // this does not get saved and also faster than changing color normally
             }
         }
     }

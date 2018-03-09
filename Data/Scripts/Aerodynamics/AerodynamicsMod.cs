@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using Sandbox.ModAPI.Interfaces;
 using VRage;
-using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using VRage.ObjectBuilders;
-using VRage.Utils;
 using VRageMath;
 
 // This mod can also be disabled by other mods if the actions are overlapping and you want people to still be able to use the wings as props.
@@ -55,7 +49,7 @@ using VRageMath;
 namespace Digi.Aerodynamics
 {
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
-    public class Aerodynamics : MySessionComponentBase
+    public class AerodynamicsMod : MySessionComponentBase
     {
         public override void LoadData()
         {
@@ -63,7 +57,7 @@ namespace Digi.Aerodynamics
             Log.SetUp("Aerodynamics", WORKSHOP_ID);
         }
 
-        public static Aerodynamics instance = null;
+        public static AerodynamicsMod instance = null;
 
         private bool init = false;
         private short planetRefreshTick = 0;
@@ -77,8 +71,8 @@ namespace Digi.Aerodynamics
         private const short PLANET_REFRESH_TICKS = 60 * 5; // refreshing planet cache time
         public const float MIN_ATMOSPHERE = 0.4f;
         public const float MAX_ATMOSPHERE = 0.7f;
-        public readonly Vector3 DEBUG_COLOR_ACTIVE = new Vector3(120f / 360f, 1, 1);
-        public readonly Vector3 DEBUG_COLOR_INACTIVE = new Vector3(0, 1, 1);
+        public Vector3 DEBUG_COLOR_ACTIVE = new Vector3(120f / 360f, 1, 1);
+        public Vector3 DEBUG_COLOR_INACTIVE = new Vector3(0, 1, 1);
 
         public void Init()
         {
