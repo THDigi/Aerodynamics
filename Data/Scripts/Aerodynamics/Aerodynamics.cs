@@ -14,8 +14,12 @@ using VRage.Utils;
 using VRageMath;
 
 // This mod can also be disabled by other mods if the actions are overlapping and you want people to still be able to use the wings as props.
+// ----
 // A quick way to disable it is by calling this after a second after the session is not null:
+//
 // MyAPIGateway.Utilities.SendModMessage(473571246, MyTuple.Create(false, "YourModName"));
+//
+// -----
 // Alternatively you can register the same message ID to get a getter and a setter which you can call whenever you want.
 //
 // private const long AERODYNAMICS_WORKSHOP_ID = 473571246;
@@ -92,9 +96,19 @@ namespace Digi.Aerodynamics
         {
             instance = null;
 
-            MyAPIGateway.Utilities.UnregisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
-
-            planets.Clear();
+            try
+            {
+                if(init)
+                {
+                    init = false;
+                    MyAPIGateway.Utilities.UnregisterMessageHandler(WORKSHOP_ID, ModMessageHandler);
+                    planets.Clear();
+                }
+            }
+            catch(Exception e)
+            {
+                Log.Error(e);
+            }
 
             Log.Close();
         }
