@@ -90,7 +90,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AerodynamicWingsMod.cs" />
+    <Compile Include="AerodynamicsMod.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Wing.cs" />
   </ItemGroup>
