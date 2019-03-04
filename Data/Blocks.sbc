@@ -8,7 +8,8 @@
 				<SubtypeId>WingStreight</SubtypeId> <!-- I can't change this now xD -->
 			</Id>
 			<DisplayName>Wing Straight</DisplayName>
-			<Description>minspeed=50;maxspeed=110;force=10000;dragcoef=0.05</Description>
+      <Description>Aerodynamic wings which can be used to fly.
+75% efficiency.</Description>
 			<Icon>Textures\Icons\WingStraight.dds</Icon>
 			<CubeSize>Small</CubeSize>
 			<BlockTopology>TriangleMesh</BlockTopology>
@@ -59,7 +60,8 @@
 				<SubtypeId>WingAngled1</SubtypeId>
 			</Id>
 			<DisplayName>Wing Angled 1</DisplayName>
-			<Description>minspeed=50;maxspeed=110;force=10000;dragcoef=0.05</Description>
+      <Description>Aerodynamic wings which can be used to fly.
+100% efficiency.</Description>
 			<Icon>Textures\Icons\WingAngled1.dds</Icon>
 			<GuiVisible>false</GuiVisible>
 			<CubeSize>Small</CubeSize>
@@ -104,7 +106,8 @@
 				<SubtypeId>WingAngled2</SubtypeId>
 			</Id>
 			<DisplayName>Wing Angled 2</DisplayName>
-			<Description>minspeed=50;maxspeed=110;force=10000;dragcoef=0.05</Description>
+      <Description>Aerodynamic wings which can be used to fly.
+125% efficiency.</Description>
 			<Icon>Textures\Icons\WingAngled2.dds</Icon>
 			<GuiVisible>false</GuiVisible>
 			<CubeSize>Small</CubeSize>
