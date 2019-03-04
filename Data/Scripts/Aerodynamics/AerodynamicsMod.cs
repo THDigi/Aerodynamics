@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Interfaces.Terminal;
 using VRage;
 using VRage.Game.Components;
 using VRage.ModAPI;
+using VRage.Utils;
 using VRageMath;
 
 // This mod can also be disabled by other mods if the actions are overlapping and you want people to still be able to use the wings as props.
@@ -201,6 +203,26 @@ namespace Digi.Aerodynamics
             {
                 Log.Error(e);
             }
+        }
+
+        private bool controlsAdded = false;
+
+        public void AddTerminalControls()
+        {
+            if(controlsAdded)
+                return;
+
+            controlsAdded = true;
+
+            var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyTerminalBlock>("Wings.UseGridCOM");
+            c.Title = MyStringId.GetOrCompute("Use center of mass of:");
+            c.OnText = MyStringId.GetOrCompute("Grid");
+            c.OffText = MyStringId.GetOrCompute("Ship");
+            c.SupportsMultipleBlocks = true;
+            c.Visible = (b) => b.GameLogic.GetAs<Wing>() != null;
+            c.Getter = (b) => b.GameLogic.GetAs<Wing>().UseGridCOM;
+            c.Setter = (b, v) => b.GameLogic.GetAs<Wing>().UseGridCOM = v;
+            MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(c);
         }
     }
 }

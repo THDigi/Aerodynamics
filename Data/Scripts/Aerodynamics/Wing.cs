@@ -14,12 +14,35 @@ namespace Digi.Aerodynamics
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_TerminalBlock), false, "WingAngled1", "WingAngled2", "WingStreight")]
     public class Wing : MyGameLogicComponent
     {
+        private const string USE_GROUP_COM_TAG = "UseGridCOM";
+
         private IMyTerminalBlock block;
         private float atmosphere = 0;
         private int atmospheres = 0;
 
         private bool debugPrevColorSaved = false;
         private Vector3 debugPrevColor;
+
+        private bool _useGridCOM = false;
+        public bool UseGridCOM
+        {
+            get { return _useGridCOM; }
+            set
+            {
+                _useGridCOM = value;
+
+                var data = block.CustomData;
+                var tagIndex = data.IndexOf(USE_GROUP_COM_TAG, 0, StringComparison.InvariantCultureIgnoreCase);
+
+                if(tagIndex != -1)
+                    data = data.Substring(0, tagIndex) + data.Substring(tagIndex + USE_GROUP_COM_TAG.Length); // strip the tag from customdata
+
+                if(_useGridCOM)
+                    data = (string.IsNullOrWhiteSpace(block.CustomData) ? USE_GROUP_COM_TAG : $"{block.CustomData}\n{USE_GROUP_COM_TAG}");
+
+                block.CustomData = data.Trim();
+            }
+        }
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
@@ -31,18 +54,22 @@ namespace Digi.Aerodynamics
         {
             try
             {
-                if(block.CubeGrid.Physics == null)
-                {
-                    NeedsUpdate = MyEntityUpdateEnum.NONE;
-                }
-                else
-                {
-                    NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_10TH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
+                AerodynamicsMod.instance.AddTerminalControls();
 
+                if(block.CubeGrid?.Physics == null)
+                    return;
+
+                NeedsUpdate = MyEntityUpdateEnum.EACH_FRAME | MyEntityUpdateEnum.EACH_10TH_FRAME | MyEntityUpdateEnum.EACH_100TH_FRAME;
+
+                if(MyAPIGateway.Session.IsServer)
+                {
                     block.ShowInTerminal = false;
                     block.ShowInToolbarConfig = false;
-                    block.AppendingCustomInfo += CustomInfo;
                 }
+
+                block.AppendingCustomInfo += CustomInfo;
+                block.CustomDataChanged += CustomDataChanged;
+                CustomDataChanged(block);
             }
             catch(Exception e)
             {
@@ -55,7 +82,15 @@ namespace Digi.Aerodynamics
             block = (IMyTerminalBlock)Entity;
 
             if(block != null)
+            {
                 block.AppendingCustomInfo -= CustomInfo;
+                block.CustomDataChanged -= CustomDataChanged;
+            }
+        }
+
+        private void CustomDataChanged(IMyTerminalBlock _unused)
+        {
+            _useGridCOM = (block.CustomData.IndexOf(USE_GROUP_COM_TAG, 0, StringComparison.InvariantCultureIgnoreCase) != -1);
         }
 
         public override void UpdateAfterSimulation()
@@ -72,7 +107,6 @@ namespace Digi.Aerodynamics
                 if(grid.Physics == null || grid.Physics.IsStatic || block.MarkedForClose || block.Closed || !block.IsWorking)
                     return;
 
-                var gridCenter = grid.Physics.CenterOfMassWorld;
                 bool debug = (MyAPIGateway.Session.CreativeMode && block.ShowInToolbarConfig);
                 bool debugText = true;
 
@@ -147,8 +181,20 @@ namespace Digi.Aerodynamics
                     {
                         var upDir = blockMatrix.Up;
                         var forceVector = -upDir * upDir.Dot(vel) * forceMul * speedSq * atmosphere;
+                        var applyForceAt = Vector3D.Zero;
 
-                        grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, gridCenter, null);
+                        if(_useGridCOM)
+                        {
+                            applyForceAt = grid.Physics.CenterOfMassWorld;
+                        }
+                        else
+                        {
+                            var gridSharedProperties = MyGridPhysicalGroupData.GetGroupSharedProperties((MyCubeGrid)grid);
+                            applyForceAt = gridSharedProperties.CoMWorld;
+                        }
+
+                        grid.Physics.AddForce(MyPhysicsForceType.APPLY_WORLD_FORCE, forceVector, applyForceAt, null);
+
                         noLiftWarning = false;
 
                         if(debug)
