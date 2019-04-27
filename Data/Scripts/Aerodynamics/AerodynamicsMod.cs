@@ -215,14 +215,34 @@ namespace Digi.Aerodynamics
             controlsAdded = true;
 
             var c = MyAPIGateway.TerminalControls.CreateControl<IMyTerminalControlOnOffSwitch, IMyTerminalBlock>("Wings.UseGridCOM");
-            c.Title = MyStringId.GetOrCompute("Use center of mass of:");
+            c.Title = MyStringId.GetOrCompute("Use center of mass of");
             c.OnText = MyStringId.GetOrCompute("Grid");
             c.OffText = MyStringId.GetOrCompute("Ship");
             c.SupportsMultipleBlocks = true;
-            c.Visible = (b) => b.GameLogic.GetAs<Wing>() != null;
-            c.Getter = (b) => b.GameLogic.GetAs<Wing>().UseGridCOM;
-            c.Setter = (b, v) => b.GameLogic.GetAs<Wing>().UseGridCOM = v;
+            c.Visible = TC_GridCOM_Visible;
+            c.Getter = TC_GridCOM_Getter;
+            c.Setter = TC_GridCOM_Setter;
             MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(c);
+        }
+
+        private Wing GetGameLogic(IMyTerminalBlock block) => block.GameLogic.GetAs<Wing>();
+
+        private bool TC_GridCOM_Visible(IMyTerminalBlock block)
+        {
+            return GetGameLogic(block) != null;
+        }
+
+        private bool TC_GridCOM_Getter(IMyTerminalBlock block)
+        {
+            var logic = GetGameLogic(block);
+            return (logic != null ? logic.UseGridCOM : false);
+        }
+
+        private void TC_GridCOM_Setter(IMyTerminalBlock block, bool value)
+        {
+            var logic = GetGameLogic(block);
+            if(logic != null)
+                logic.UseGridCOM = value;
         }
     }
 }
