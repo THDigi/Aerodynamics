@@ -225,7 +225,7 @@ namespace Digi.Aerodynamics
             MyAPIGateway.TerminalControls.AddControl<IMyTerminalBlock>(c);
         }
 
-        private Wing GetGameLogic(IMyTerminalBlock block) => block.GameLogic.GetAs<Wing>();
+        private Wing GetGameLogic(IMyTerminalBlock block) => block?.GameLogic?.GetAs<Wing>();
 
         private bool TC_GridCOM_Visible(IMyTerminalBlock block)
         {
